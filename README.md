@@ -3,7 +3,7 @@
 ## 实现原理
 注册N个自定义进程做渲染进程，进程内关闭协程环境，并监听UNIXSOCK，客户端调用携程的client客户端发送数据给进程渲染，进程再返回结果给客户端，用来解决PHP模板引擎协程安全问题。可以实现渲染接口，根据自己的喜好引入smarty或者是blade或者是其他引擎.
 
-## Demo
+### 原理基础实现
 ```php
 use EasySwoole\Template\Config;
 use EasySwoole\Template\Render;
@@ -41,3 +41,27 @@ $render->attachServer($http);
 
 $http->start();
 ```
+
+## 用Smarty作为渲染器
+```
+use EasySwoole\Template\Config;
+use EasySwoole\Template\Render;
+use EasySwoole\Template\Test\Smarty;
+
+$config = new Config();
+$config->setRender(new Smarty());
+$render = new Render($config);
+
+$http = new swoole_http_server("0.0.0.0", 9501);
+$http->on("request", function ($request, $response)use($render) {
+    $response->end($render->render('smarty.tpl',[
+        'time'=>time()
+    ]));
+});
+$render->attachServer($http);
+
+$http->start();
+```
+> EasySwoole\Template\Test\Smarty 为测试用渲染器，测试前请引入smarty/smarty包。
+
+## 用Blade作为渲染器
