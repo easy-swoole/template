@@ -117,3 +117,12 @@ $http->on("request", function (\Swoole\Http\Request $request, \Swoole\Http\Respo
 $render->attachServer($http);
 $http->start();
 ```
+
+### 启动测试服务器
+
+代码包内置了一个小型的测试服务器，在tests目录下，支持smarty、plates、blade、think四种引擎的快速测试，使用下方代码启动，访问 http://127.0.0.1:9501 即可查看输出，对应的模板文件在test/TemplateViews目录下，可以修改这些模板来测试功能
+
+```bash
+cd tests
+php testServer.php -e 模板引擎名称
+```
