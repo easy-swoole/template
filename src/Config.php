@@ -10,6 +10,7 @@ class Config extends SplBean
 {
     protected $render;
     protected $tempDir;
+    protected $workerNum = 3;
 
     /**
      * @return mixed
@@ -41,6 +42,22 @@ class Config extends SplBean
     public function setTempDir($tempDir): void
     {
         $this->tempDir = $tempDir;
+    }
+
+    /**
+     * @return int
+     */
+    public function getWorkerNum(): int
+    {
+        return $this->workerNum;
+    }
+
+    /**
+     * @param int $workerNum
+     */
+    public function setWorkerNum(int $workerNum): void
+    {
+        $this->workerNum = $workerNum;
     }
 
     protected function initialize(): void

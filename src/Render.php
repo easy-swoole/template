@@ -18,7 +18,7 @@ class Render
 
     }
 
-    function render(string $template,array $data = [],array $options = [])
+    function render(string $template,array $data = [],array $options = []):?string
     {
 
     }
