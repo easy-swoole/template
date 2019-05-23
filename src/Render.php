@@ -5,6 +5,7 @@ namespace EasySwoole\Template;
 
 
 
+
 class Render
 {
     protected $config;
@@ -15,11 +16,40 @@ class Render
 
     function attachServer(\swoole_server $server)
     {
-
+        $list = $this->generateProcessList();
+        foreach ($list as $p){
+            $server->addProcess($p->getProcess());
+        }
     }
 
     function render(string $template,array $data = [],array $options = []):?string
     {
+        /*
+         * 随机找一个进程
+         */
+        mt_srand();
+        $id = rand(1,$this->config->getWorkerNum());
+        $sockFile = $this->config->getTempDir()."/Render.Worker.{$id}.sock";
+        $client = new UnixClient($sockFile);
+        $client->send(Protocol::pack(serialize([
+            'template'=>$template,
+            'data'=>$data,
+            'options'=>$options
+        ])));
+        $data = $client->recv($this->config->getTimeout());
+        if($data){
+            $data = Protocol::unpack($data);
+            return unserialize($data);
+        }
+        return null;
+    }
 
+    protected function generateProcessList():array
+    {
+        $array = [];
+        for ($i = 1;$i <= $this->config->getWorkerNum();$i++){
+            $array[] = new RenderProcess("Render.Worker.{$i}",$this->config);
+        }
+        return $array;
     }
 }

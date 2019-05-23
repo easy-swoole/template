@@ -11,6 +11,7 @@ class Config extends SplBean
     protected $render;
     protected $tempDir;
     protected $workerNum = 3;
+    protected $timeout = 3;
 
     /**
      * @return mixed
@@ -59,6 +60,24 @@ class Config extends SplBean
     {
         $this->workerNum = $workerNum;
     }
+
+    /**
+     * @return int
+     */
+    public function getTimeout(): int
+    {
+        return $this->timeout;
+    }
+
+    /**
+     * @param int $timeout
+     */
+    public function setTimeout(int $timeout): void
+    {
+        $this->timeout = $timeout;
+    }
+
+
 
     protected function initialize(): void
     {

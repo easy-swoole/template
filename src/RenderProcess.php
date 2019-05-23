@@ -33,6 +33,13 @@ class RenderProcess extends AbstractProcess
                 $data = fread($conn,$allLength );
                 if(strlen($data) == $allLength){
                     $data = unserialize($data);
+                    try{
+                        $reply = $arg->getRender()->render($data['template'],$data['data'],$data['options']);
+                    }catch (\Throwable $throwable){
+                        $reply = $arg->getRender()->onException($throwable);
+                    }finally{
+                        $arg->getRender()->afterRender($reply,$data['template'],$data['data'],$data['options']);
+                    }
                 }
             }
             fwrite($conn,Protocol::pack(serialize($reply)));
@@ -48,5 +55,10 @@ class RenderProcess extends AbstractProcess
     public function onReceive(string $str)
     {
         // TODO: Implement onReceive() method.
+    }
+
+    public function onException(\Throwable $throwable)
+    {
+       trigger_error("{$throwable->getMessage()} at file:{$throwable->getFile()} line:{$throwable->getLine()}");
     }
 }
