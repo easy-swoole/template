@@ -18,15 +18,15 @@
     ],
     "require": {
         "easyswoole/spl": "^1.0",
-        "easyswoole/component": "^1.5",
-        "phpunit/phpunit": "^8.1",
-        "smarty/smarty": "~3.1",
-        "league/plates": "3.*",
-        "duncan3dc/blade": "^4.5"
+        "easyswoole/component": "^1.5"
     },
     "require-dev": {
         "easyswoole/swoole-ide-helper": "^1.1",
-        "topthink/think-template": "^2.0"
+        "topthink/think-template": "^2.0",
+        "easyswoole/phpunit": "^1.0",
+        "smarty/smarty": "~3.1",
+        "league/plates": "3.*",
+        "duncan3dc/blade": "^4.5"
     },
     "autoload": {
         "psr-4": {

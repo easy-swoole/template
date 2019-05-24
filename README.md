@@ -104,14 +104,11 @@ class SmartyRender implements RenderInterface
 }
 
 // 配置渲染器
-$config = new Config();
-$config->setRender(new SmartyRender());
-$render = new Render($config);
-
+Render::getInstance()->getConfig()->setRender(new SmartyRender());
 // 启动Swoole(在框架中使用时可以省略)
 $http = new swoole_http_server("0.0.0.0", 9501);
-$http->on("request", function (\Swoole\Http\Request $request, \Swoole\Http\Response $response)use($render) {
-    $content = $render->render('smarty.tpl',['time'=>time()]);  // 调用渲染器进行渲染
+$http->on("request", function (\Swoole\Http\Request $request, \Swoole\Http\Response $response){
+    $content = Render::getInstance()->render('smarty.tpl',['time'=>time(),'engine'=>'smarty']);  // 调用渲染器进行渲染
     $response->end($content);
 });
 $render->attachServer($http);

@@ -6,12 +6,22 @@ namespace EasySwoole\Template;
 
 
 
+use EasySwoole\Component\Singleton;
+
 class Render
 {
+    use Singleton;
+
     protected $config;
-    function __construct(Config $config)
+
+    function __construct()
     {
-        $this->config = $config;
+        $this->config = new Config();
+    }
+
+    public function getConfig():Config
+    {
+        return $this->config;
     }
 
     function attachServer(\swoole_server $server)

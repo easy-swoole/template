@@ -25,25 +25,33 @@ class RenderProcess extends AbstractProcess
         }
         while (1){
             $reply = null;
-            $conn = stream_socket_accept($socket,-1);
-            if($conn){
-                stream_set_timeout($conn,2);
-                $header = fread($conn,4);
-                $allLength = Protocol::packDataLength($header);
-                $data = fread($conn,$allLength );
-                if(strlen($data) == $allLength){
-                    $data = unserialize($data);
-                    try{
-                        $reply = $arg->getRender()->render($data['template'],$data['data'],$data['options']);
-                    }catch (\Throwable $throwable){
-                        $reply = $arg->getRender()->onException($throwable);
-                    }finally{
-                        $arg->getRender()->afterRender($reply,$data['template'],$data['data'],$data['options']);
+            $read = [$socket];
+            $write = null;
+            $except = null;
+            $result = stream_select($read, $write, $except, 1);
+            if ($result > 0) {
+                $conn = stream_socket_accept($socket, 1);
+                if($conn){
+                    stream_set_timeout($conn,2);
+                    $header = fread($conn,4);
+                    $allLength = Protocol::packDataLength($header);
+                    $data = fread($conn,$allLength );
+                    if(strlen($data) == $allLength){
+                        $data = unserialize($data);
+                        try{
+                            $reply = $arg->getRender()->render($data['template'],$data['data'],$data['options']);
+                        }catch (\Throwable $throwable){
+                            $reply = $arg->getRender()->onException($throwable);
+                        }finally{
+                            $arg->getRender()->afterRender($reply,$data['template'],$data['data'],$data['options']);
+                        }
                     }
+                    fwrite($conn,Protocol::pack(serialize($reply)));
+                    fclose($conn);
                 }
+            }else{
+                usleep(1);
             }
-            fwrite($conn,Protocol::pack(serialize($reply)));
-            fclose($conn);
         }
     }
 
