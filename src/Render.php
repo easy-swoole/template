@@ -39,7 +39,7 @@ class Render
          */
         mt_srand();
         $id = rand(1,$this->config->getWorkerNum());
-        $sockFile = $this->config->getTempDir()."/Render.Worker.{$id}.sock";
+        $sockFile = $this->config->getTempDir()."/Render.{$this->config->getSocketPrefix()}Worker.{$id}.sock";
         $client = new UnixClient($sockFile);
         $client->send(Protocol::pack(serialize([
             'template'=>$template,
@@ -58,7 +58,7 @@ class Render
     {
         $array = [];
         for ($i = 1;$i <= $this->config->getWorkerNum();$i++){
-            $array[] = new RenderProcess("Render.Worker.{$i}",$this->config);
+            $array[] = new RenderProcess("Render.{$this->config->getSocketPrefix()}Worker.{$i}",$this->config,false,2,true);;
         }
         return $array;
     }

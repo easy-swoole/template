@@ -12,6 +12,7 @@ class Config extends SplBean
     protected $tempDir;
     protected $workerNum = 3;
     protected $timeout = 3;
+    protected $socketPrefix;
 
     /**
      * @return mixed
@@ -77,7 +78,21 @@ class Config extends SplBean
         $this->timeout = $timeout;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getSocketPrefix()
+    {
+        return $this->socketPrefix;
+    }
 
+    /**
+     * @param mixed $socketPrefix
+     */
+    public function setSocketPrefix($socketPrefix): void
+    {
+        $this->socketPrefix = $socketPrefix;
+    }
 
     protected function initialize(): void
     {
@@ -85,5 +100,7 @@ class Config extends SplBean
             $this->tempDir = sys_get_temp_dir();
         }
     }
+
+
 
 }

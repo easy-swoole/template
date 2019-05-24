@@ -5,6 +5,7 @@ namespace EasySwoole\Template;
 
 
 use EasySwoole\Component\Process\AbstractProcess;
+use Swoole\Coroutine\Socket;
 
 class RenderProcess extends AbstractProcess
 {
@@ -16,41 +17,39 @@ class RenderProcess extends AbstractProcess
         {
             unlink($sockFile);
         }
-        $ctx = stream_context_create(['socket' => ['so_reuseaddr' => true, 'backlog' => 2048]]);
-        $socket = stream_socket_server("unix://$sockFile", $errno, $errStr,STREAM_SERVER_BIND | STREAM_SERVER_LISTEN,$ctx);
-        if (!$socket)
-        {
-            trigger_error($errStr);
+        $socketServer = new Socket(AF_UNIX,SOCK_STREAM,0);
+        $socketServer->bind($sockFile);
+        if(!$socketServer->listen(2048)){
+            trigger_error('listen '.$sockFile. ' fail');
             return;
         }
         while (1){
-            $reply = null;
-            $read = [$socket];
-            $write = null;
-            $except = null;
-            $result = stream_select($read, $write, $except, 1);
-            if ($result > 0) {
-                $conn = stream_socket_accept($socket, 1);
-                if($conn){
-                    stream_set_timeout($conn,2);
-                    $header = fread($conn,4);
-                    $allLength = Protocol::packDataLength($header);
-                    $data = fread($conn,$allLength );
-                    if(strlen($data) == $allLength){
-                        $data = unserialize($data);
-                        try{
-                            $reply = $arg->getRender()->render($data['template'],$data['data'],$data['options']);
-                        }catch (\Throwable $throwable){
-                            $reply = $arg->getRender()->onException($throwable);
-                        }finally{
-                            $arg->getRender()->afterRender($reply,$data['template'],$data['data'],$data['options']);
-                        }
+            $conn = $socketServer->accept(-1);
+            if($conn){
+                $header = $conn->recvAll(4,1);
+                if(strlen($header) != 4){
+                    $conn->close();
+                    return;
+                }
+                $allLength = Protocol::packDataLength($header);
+                $data = $conn->recvAll($allLength,1);
+                if(strlen($data) == $allLength){
+                    $data = unserialize($data);
+                    try{
+                        $reply = $arg->getRender()->render($data['template'],$data['data'],$data['options']);
+                    }catch (\Throwable $throwable){
+                        $reply = $arg->getRender()->onException($throwable);
+                    }finally{
+                        $arg->getRender()->afterRender($reply,$data['template'],$data['data'],$data['options']);
                     }
-                    fwrite($conn,Protocol::pack(serialize($reply)));
-                    fclose($conn);
+                    $conn->sendAll(Protocol::pack(serialize($reply)));
+                    $conn->close();
+                }else{
+                    $conn->close();
+                    return;
                 }
             }else{
-                usleep(1);
+                \co::sleep(0.001);
             }
         }
     }
@@ -67,6 +66,6 @@ class RenderProcess extends AbstractProcess
 
     public function onException(\Throwable $throwable)
     {
-       trigger_error("{$throwable->getMessage()} at file:{$throwable->getFile()} line:{$throwable->getLine()}");
+        trigger_error("{$throwable->getMessage()} at file:{$throwable->getFile()} line:{$throwable->getLine()}");
     }
 }
