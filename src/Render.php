@@ -6,13 +6,16 @@ namespace EasySwoole\Template;
 
 
 
+use EasySwoole\Component\Process\AbstractProcess;
 use EasySwoole\Component\Singleton;
+use Swoole\Process;
 
 class Render
 {
     use Singleton;
 
     protected $config;
+    private $worker = [];
 
     function __construct()
     {
@@ -54,11 +57,20 @@ class Render
         return null;
     }
 
+    function restartWorker()
+    {
+        /** @var AbstractProcess $process */
+        foreach ($this->worker as $process){
+            $process->getProcess()->write('shutdown');
+        }
+    }
+
     protected function generateProcessList():array
     {
         $array = [];
         for ($i = 1;$i <= $this->config->getWorkerNum();$i++){
-            $array[] = new RenderProcess("Render.{$this->config->getSocketPrefix()}Worker.{$i}",$this->config,false,2,true);;
+            $array[$i] = new RenderProcess("Render.{$this->config->getSocketPrefix()}Worker.{$i}",$this->config,false,2,true);
+            $this->worker[$i] = $array[$i];
         }
         return $array;
     }

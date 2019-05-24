@@ -61,7 +61,9 @@ class RenderProcess extends AbstractProcess
 
     public function onReceive(string $str)
     {
-        // TODO: Implement onReceive() method.
+        if($str == 'shutdown'){
+            $this->getProcess()->exit(0);
+        }
     }
 
     public function onException(\Throwable $throwable)
