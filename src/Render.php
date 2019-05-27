@@ -72,6 +72,7 @@ class Render
             $config->setProcessName('"Render.{$this->config->getSocketPrefix()}Worker.{$i}"');
             $config->setSocketFile($this->config->getTempDir()."/Render.{$this->config->getSocketPrefix()}Worker.{$i}.sock");
             $config->setRender($this->config->getRender());
+            $config->setAsyncCallback(false);
             $array[$i] = new RenderProcess($config);
             $this->worker[$i] = $array[$i];
         }
