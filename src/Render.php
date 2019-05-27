@@ -8,7 +8,6 @@ namespace EasySwoole\Template;
 
 use EasySwoole\Component\Process\AbstractProcess;
 use EasySwoole\Component\Singleton;
-use Swoole\Process;
 
 class Render
 {
@@ -69,7 +68,11 @@ class Render
     {
         $array = [];
         for ($i = 1;$i <= $this->config->getWorkerNum();$i++){
-            $array[$i] = new RenderProcess("Render.{$this->config->getSocketPrefix()}Worker.{$i}",$this->config,false,2,true);
+            $config = new RenderProcessConfig();
+            $config->setProcessName('"Render.{$this->config->getSocketPrefix()}Worker.{$i}"');
+            $config->setSocketFile($this->config->getTempDir()."/Render.{$this->config->getSocketPrefix()}Worker.{$i}.sock");
+            $config->setRender($this->config->getRender());
+            $array[$i] = new RenderProcess($config);
             $this->worker[$i] = $array[$i];
         }
         return $array;
