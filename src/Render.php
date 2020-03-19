@@ -16,9 +16,13 @@ class Render
     protected $config;
     private $worker = [];
 
-    function __construct()
+    function __construct(Config $config)
     {
-        $this->config = new Config();
+        if($config){
+            $this->config = $config;
+        }else{
+            $this->config = new Config();
+        }
     }
 
     public function getConfig():Config
