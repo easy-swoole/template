@@ -4,6 +4,7 @@ namespace EasySwoole\Template;
 
 use EasySwoole\Component\Process\Socket\UnixProcessConfig;
 use EasySwoole\Component\Singleton;
+use Swoole\Coroutine;
 use Swoole\Server;
 
 class Render
@@ -62,7 +63,18 @@ class Render
 
     function restartWorker()
     {
-
+        $com = new Command();
+        $com->setOp(Command::OP_WORKER_EXIT);
+        $data = Protocol::pack(serialize($com));
+        $server = $this->getConfig()->getServerName();
+        for($i = 0;$i < $this->getConfig()->getWorkerNum();$i++){
+            $sockFile = $this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$i}.sock";
+            Coroutine::create(function ()use($sockFile,$data){
+                $client = new UnixClient($sockFile);
+                $client->send($data);
+            });
+        }
+        return true;
     }
 
     protected function __generateWorkerProcess():array
