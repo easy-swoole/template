@@ -41,77 +41,33 @@ ThinkPHP框架使用的模板引擎
 
 ```php
 <?php
-
-use EasySwoole\Template\Config;
 use EasySwoole\Template\Render;
 use EasySwoole\Template\RenderInterface;
-use \SmartyException;
-use \Throwable;
 
-class SmartyRender implements RenderInterface
-{
-    private $engine;
+require 'vendor/autoload.php';
 
-    function __construct($viewsDir, $cacheDir = '')
+class MyRender implements RenderInterface{
+
+    public function render(string $template, ?array $data = null, ?array $options = null): ?string
     {
-        if ($cacheDir == '') {
-            $cacheDir = sys_get_temp_dir();
-        }
-        $this->engine = new \Smarty();
-        $this->engine->setTemplateDir($viewsDir);
-        $this->engine->setCacheDir($cacheDir);
-        $this->engine->setCompileDir($cacheDir);
+        return "your template is {$template} and data is ".json_encode($data);
     }
 
-    /**
-     * 模板渲染
-     * @param string $template
-     * @param array $data
-     * @param array $options
-     * @return string|null
-     * @throws SmartyException
-     */
-    public function render(string $template, array $data = [], array $options = []): ?string
+    public function onException(\Throwable $throwable, $arg): string
     {
-        foreach ($data as $key => $item) {
-            $this->engine->assign($key, $item);
-        }
-        return $this->engine->fetch($template);
-    }
-
-    /**
-     * 每次渲染完成都会执行清理
-     * @param string|null $result
-     * @param string $template
-     * @param array $data
-     * @param array $options
-     */
-    public function afterRender(?string $result, string $template, array $data = [], array $options = [])
-    {
-
-    }
-
-    /**
-     * 异常处理
-     * @param Throwable $throwable
-     * @return string
-     * @throws Throwable
-     */
-    public function onException(Throwable $throwable): string
-    {
-        throw $throwable;
+        return $throwable->getTraceAsString();
     }
 }
+Render::getInstance()->getConfig()->setRender(new MyRender());
 
-// 配置渲染器
-Render::getInstance()->getConfig()->setRender(new SmartyRender());
-// 启动Swoole(在框架中使用时可以省略)
 $http = new swoole_http_server("0.0.0.0", 9501);
-$http->on("request", function (\Swoole\Http\Request $request, \Swoole\Http\Response $response){
-    $content = Render::getInstance()->render('smarty.tpl',['time'=>time(),'engine'=>'smarty']);  // 调用渲染器进行渲染
-    $response->end($content);
+$http->on("request", function ( $request,  $response){
+    $ret = Render::getInstance()->render('index.html',['easyswoole'=>'hello']);
+    $response->end($ret);
 });
-$render->attachServer($http);
+
+Render::getInstance()->attachServer($http);
+
 $http->start();
 ```
 

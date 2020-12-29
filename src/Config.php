@@ -8,10 +8,13 @@ use EasySwoole\Spl\SplBean;
 
 class Config extends SplBean
 {
+    protected $serverName = 'EasySwoole';
     protected $render;
     protected $tempDir;
     protected $workerNum = 3;
     protected $timeout = 3;
+    /** @var callable|null */
+    protected $onException;
 
     /**
      * @return mixed
@@ -85,10 +88,42 @@ class Config extends SplBean
         return md5(get_class($this->getRender()));
     }
 
+    /**
+     * @return callable|null
+     */
+    public function getOnException(): ?callable
+    {
+        return $this->onException;
+    }
+
+    /**
+     * @param callable|null $onException
+     */
+    public function setOnException(?callable $onException): void
+    {
+        $this->onException = $onException;
+    }
+
+    /**
+     * @return string
+     */
+    public function getServerName(): string
+    {
+        return $this->serverName;
+    }
+
+    /**
+     * @param string $serverName
+     */
+    public function setServerName(string $serverName): void
+    {
+        $this->serverName = $serverName;
+    }
+
     protected function initialize(): void
     {
         if(empty($this->tempDir)){
-            $this->tempDir = sys_get_temp_dir();
+            $this->tempDir = getcwd();
         }
     }
 

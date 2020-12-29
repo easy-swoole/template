@@ -1,28 +1,24 @@
 <?php
 
-
 namespace EasySwoole\Template;
 
-
-
-
-use EasySwoole\Component\Process\AbstractProcess;
+use EasySwoole\Component\Process\Socket\UnixProcessConfig;
 use EasySwoole\Component\Singleton;
+use Swoole\Server;
 
 class Render
 {
     use Singleton;
 
     protected $config;
-    private $worker = [];
 
-    function __construct(Config $config)
+
+    function __construct(?Config $config = null)
     {
-        if($config){
-            $this->config = $config;
-        }else{
-            $this->config = new Config();
+        if($config == null){
+            $config = new Config();
         }
+        $this->config = $config;
     }
 
     public function getConfig():Config
@@ -30,28 +26,32 @@ class Render
         return $this->config;
     }
 
-    function attachServer(\swoole_server $server)
+    function attachServer(Server $server)
     {
-        $list = $this->generateProcessList();
+        $list = $this->__generateWorkerProcess();
         foreach ($list as $p){
             $server->addProcess($p->getProcess());
         }
     }
 
-    function render(string $template,array $data = [],array $options = []):?string
+    function render(string $template,?array $data = null,?array $options = null):?string
     {
         /*
          * 随机找一个进程
          */
         mt_srand();
-        $id = rand(1,$this->config->getWorkerNum());
-        $sockFile = $this->config->getTempDir()."/Render.{$this->config->getSocketPrefix()}Worker.{$id}.sock";
+        $id = mt_rand(0,$this->getConfig()->getWorkerNum()-1);
+        $server = $this->getConfig()->getServerName();
+        $sockFile = $this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$id}.sock";
         $client = new UnixClient($sockFile);
-        $client->send(Protocol::pack(serialize([
+        $com = new Command();
+        $com->setOp(Command::OP_RENDER);
+        $com->setArg([
             'template'=>$template,
             'data'=>$data,
             'options'=>$options
-        ])));
+        ]);
+        $client->send(Protocol::pack(serialize($com)));
         $data = $client->recv($this->config->getTimeout());
         if($data){
             $data = Protocol::unpack($data);
@@ -62,23 +62,21 @@ class Render
 
     function restartWorker()
     {
-        /** @var AbstractProcess $process */
-        foreach ($this->worker as $process){
-            $process->getProcess()->write('shutdown');
-        }
+
     }
 
-    protected function generateProcessList():array
+    protected function __generateWorkerProcess():array
     {
         $array = [];
-        for ($i = 1;$i <= $this->config->getWorkerNum();$i++){
-            $config = new RenderProcessConfig();
-            $config->setProcessName("Render.{$this->config->getSocketPrefix()}Worker.{$i}");
-            $config->setSocketFile($this->config->getTempDir()."/Render.{$this->config->getSocketPrefix()}Worker.{$i}.sock");
-            $config->setRender($this->config->getRender());
+        for ($i = 0;$i < $this->getConfig()->getWorkerNum();$i++){
+            $config = new UnixProcessConfig();
+            $server = $this->getConfig()->getServerName();
+            $config->setProcessGroup("{$server}.Render");
+            $config->setProcessName("{$server}.Render.Worker.{$i}");
+            $config->setSocketFile($this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$i}.sock");
+            $config->setArg(['config'=>$this->config]);
             $config->setAsyncCallback(false);
-            $array[$i] = new RenderProcess($config);
-            $this->worker[$i] = $array[$i];
+            $array[$i] = new RenderWorker($config);
         }
         return $array;
     }
