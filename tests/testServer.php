@@ -21,7 +21,6 @@ try {
 
     // 实例化模板引擎
     $name = $param_arr['e'];
-    $engine = Smarty::class;
     $cacheDir = __DIR__. '/TemplateCache';
     $viewsDir = __DIR__. '/TemplateViews';
     $engines = ['blade' => Blade::class, 'think' => Think::class, 'smarty' => Smarty::class, 'plates' => Plates::class];
@@ -40,8 +39,16 @@ try {
     $render = new Render($config);
 
     // 启动服务
-    $http = new swoole_http_server("0.0.0.0", 9501);
+    $http = new \Swoole\Http\Server("0.0.0.0", 9501);
+    $http->set(['worker_num' => 1]);
     $http->on("request", function (Request $request, Response $response) use ($render, $templates, $name) {
+
+      if (isset($request->get['restart'])){
+          $render->restartWorker();
+          $response->end('restart success');
+          return;
+      }
+
         $response->end($render->render($templates[$name], [
             'engine' => $name,
             'time' => date('Y-m-d H:i:s')
