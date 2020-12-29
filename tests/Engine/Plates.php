@@ -20,7 +20,7 @@ class Plates implements RenderInterface
      * @param $viewsDir
      * @param string $cacheDir
      */
-    function __construct($viewsDir, $cacheDir = '')
+    function __construct($viewsDir)
     {
         $this->engine = new PlatesEngine($viewsDir);
     }
@@ -28,11 +28,11 @@ class Plates implements RenderInterface
     /**
      * 模板渲染
      * @param string $template
-     * @param array $data
-     * @param array $options
+     * @param array|null $data
+     * @param array|null $options
      * @return string|null
      */
-    public function render(string $template, array $data = [], array $options = []): ?string
+    public function render(string $template, ?array $data = [], ?array $options = []): ?string
     {
         $content = $this->engine->render($template, $data);
         return $content;
@@ -56,7 +56,7 @@ class Plates implements RenderInterface
      * @return string
      * @throws Throwable
      */
-    public function onException(\Throwable $throwable): string
+    public function onException(\Throwable $throwable, $arg): string
     {
         throw $throwable;
     }

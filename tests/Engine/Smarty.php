@@ -29,12 +29,12 @@ class Smarty implements RenderInterface
     /**
      * 模板渲染
      * @param string $template
-     * @param array $data
-     * @param array $options
+     * @param array|null $data
+     * @param array|null $options
      * @return string|null
      * @throws SmartyException
      */
-    public function render(string $template, array $data = [], array $options = []): ?string
+    public function render(string $template, ?array $data = [], ?array $options = []): ?string
     {
         foreach ($data as $key => $item) {
             $this->engine->assign($key, $item);
@@ -60,7 +60,7 @@ class Smarty implements RenderInterface
      * @return string
      * @throws Throwable
      */
-    public function onException(Throwable $throwable): string
+    public function onException(Throwable $throwable, $arg): string
     {
         throw $throwable;
     }
