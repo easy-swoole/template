@@ -88,6 +88,7 @@ class Render
             $config->setSocketFile($this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$i}.sock");
             $config->setArg(['config'=>$this->config]);
             $config->setAsyncCallback(false);
+            $config->setEnableCoroutine(false);
             $array[$i] = new RenderWorker($config);
         }
         return $array;

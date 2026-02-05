@@ -10,7 +10,7 @@ use EasySwoole\Template\TestCase\Engine\Smarty;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 
-require_once '../vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 try {
     // 命令行启动对应的模板引擎服务器
     $param_arr = getopt('e:');
