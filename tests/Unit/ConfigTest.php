@@ -58,4 +58,23 @@ final class ConfigTest extends TestCase
         self::assertSame($callback, $config->getOnException());
         self::assertSame(md5($renderer::class), $config->getSocketPrefix());
     }
+
+    public function testWorkerNumberMustBeGreaterThanZero(): void
+    {
+        $config = new Config();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Worker number must be greater than zero.');
+
+        $config->setWorkerNum(0);
+    }
+
+    public function testNegativeWorkerNumberIsRejected(): void
+    {
+        $config = new Config();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $config->setWorkerNum(-1);
+    }
 }

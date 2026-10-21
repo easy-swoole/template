@@ -13,7 +13,8 @@ class Config extends SplBean
     protected ?string $tempDir = null;
     protected int $workerNum = 3;
     protected int $timeout = 3;
-    /** @var callable|null */
+
+    /** @var callable(\Throwable, mixed...): void|null */
     protected mixed $onException = null;
 
     /**
@@ -61,6 +62,10 @@ class Config extends SplBean
      */
     public function setWorkerNum(int $workerNum): void
     {
+        if ($workerNum < 1) {
+            throw new \InvalidArgumentException('Worker number must be greater than zero.');
+        }
+
         $this->workerNum = $workerNum;
     }
 
@@ -89,7 +94,7 @@ class Config extends SplBean
     }
 
     /**
-     * @return callable|null
+     * @return callable(\Throwable, mixed...): void|null
      */
     public function getOnException(): ?callable
     {
@@ -97,7 +102,7 @@ class Config extends SplBean
     }
 
     /**
-     * @param callable|null $onException
+     * @param callable(\Throwable, mixed...): void|null $onException
      */
     public function setOnException(?callable $onException): void
     {

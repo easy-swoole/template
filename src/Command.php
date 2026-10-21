@@ -7,7 +7,6 @@ namespace EasySwoole\Template;
 class Command
 {
     const OP_RENDER = 0x1;
-    const OP_WORKER_EXIT = 0x2;
 
     protected mixed $op = null;
     protected mixed $arg = null;

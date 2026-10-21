@@ -62,15 +62,16 @@ class MyRender implements RenderInterface{
         return $throwable->getTraceAsString();
     }
 }
-Render::getInstance()->getConfig()->setRender(new MyRender());
+$render = new Render();
+$render->getConfig()->setRender(new MyRender());
 
 $http = new swoole_http_server("0.0.0.0", 9501);
-$http->on("request", function ( $request,  $response){
-    $ret = Render::getInstance()->render('index.html',['easyswoole'=>'hello']);
+$http->on("request", function ($request, $response) use ($render) {
+    $ret = $render->render('index.html',['easyswoole'=>'hello']);
     $response->end($ret);
 });
 
-Render::getInstance()->attachServer($http);
+$render->attachServer($http);
 
 $http->start();
 ```

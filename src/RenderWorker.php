@@ -5,17 +5,36 @@ namespace EasySwoole\Template;
 
 
 use EasySwoole\Component\Process\Socket\AbstractUnixProcess;
-use Swoole\Coroutine;
 use Swoole\Coroutine\Socket;
+use Swoole\Table;
 
 class RenderWorker extends AbstractUnixProcess
 {
     protected Config $renderConfig;
+    protected Table $processTable;
 
     public function run($arg): void
     {
         $this->renderConfig = $arg['config'];
+        $this->processTable = $arg['processTable'];
+        $pid = $this->getPid();
+        if ($pid === null) {
+            throw new \RuntimeException('Unable to register render worker without a process PID.');
+        }
+        $this->writeProcessPid($pid);
         parent::run($arg);
+    }
+
+    protected function writeProcessPid(int $pid): void
+    {
+        if (!$this->processTable->set((string)$pid, ['pid' => (string)$pid])) {
+            throw new \RuntimeException("Unable to register render worker PID {$pid}.");
+        }
+    }
+
+    protected function removeProcessPid(int $pid): void
+    {
+        $this->processTable->del((string)$pid);
     }
 
     public function onAccept(Socket $socket): void
@@ -51,16 +70,6 @@ class RenderWorker extends AbstractUnixProcess
                         }
                         break;
                     }
-                    case Command::OP_WORKER_EXIT:{
-                        Coroutine::create(function (){
-                            Coroutine::sleep(0.001);
-                            $this->getProcess()->exit(0);
-                        });
-                        $reply = true;
-                        $socket->sendAll(Protocol::pack(serialize($reply)));
-                        $socket->close();
-                        break;
-                    }
                     default:{
                         $socket->close();
                     }
@@ -77,9 +86,19 @@ class RenderWorker extends AbstractUnixProcess
     {
         $call = $this->renderConfig->getOnException();
         if(is_callable($call)){
-            call_user_func($call);
+            $call($throwable, ...$arg);
         }else{
             throw $throwable;
         }
+    }
+
+    protected function onShutDown(): void
+    {
+        $pid = $this->getPid();
+        if (isset($this->processTable) && $pid !== null) {
+            $this->removeProcessPid($pid);
+        }
+
+        parent::onShutDown();
     }
 }

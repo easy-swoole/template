@@ -3,15 +3,15 @@
 namespace EasySwoole\Template;
 
 use EasySwoole\Component\Process\Socket\UnixProcessConfig;
-use EasySwoole\Component\Singleton;
-use Swoole\Coroutine;
 use Swoole\Server;
+use Swoole\Table;
 
 class Render
 {
-    use Singleton;
-
     protected Config $config;
+    protected bool $hasAttach = false;
+
+    protected Table $processTable;
 
 
     public function __construct(?Config $config = null)
@@ -20,6 +20,9 @@ class Render
             $config = new Config();
         }
         $this->config = $config;
+        $this->processTable = new Table(128);
+        $this->processTable->column('pid',Table::TYPE_STRING,10);
+        $this->processTable->create();
     }
 
     public function getConfig():Config
@@ -27,8 +30,22 @@ class Render
         return $this->config;
     }
 
+    public function getProcessTable(): Table
+    {
+        return $this->processTable;
+    }
+
     public function attachServer(Server $server): void
     {
+        if ($this->hasAttach) {
+            throw new \LogicException('Render has already been attached to a server.');
+        }
+
+        if ($this->getConfig()->getRender() === null) {
+            throw new \LogicException('RenderInterface must be configured before attaching the server.');
+        }
+
+        $this->hasAttach = true;
         $list = $this->__generateWorkerProcess();
         foreach ($list as $p){
             $server->addProcess($p->getProcess());
@@ -61,22 +78,6 @@ class Render
         return null;
     }
 
-    public function restartWorker(): bool
-    {
-        $com = new Command();
-        $com->setOp(Command::OP_WORKER_EXIT);
-        $data = Protocol::pack(serialize($com));
-        $server = $this->getConfig()->getServerName();
-        for($i = 0;$i < $this->getConfig()->getWorkerNum();$i++){
-            $sockFile = $this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$i}.sock";
-            Coroutine::create(function ()use($sockFile,$data){
-                $client = new UnixClient($sockFile);
-                $client->send($data);
-            });
-        }
-        return true;
-    }
-
     protected function __generateWorkerProcess():array
     {
         $array = [];
@@ -86,7 +87,10 @@ class Render
             $config->setProcessGroup("{$server}.Render");
             $config->setProcessName("{$server}.Render.Worker.{$i}");
             $config->setSocketFile($this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$i}.sock");
-            $config->setArg(['config'=>$this->config]);
+            $config->setArg([
+                'config' => $this->config,
+                'processTable' => $this->processTable,
+            ]);
             $config->setAsyncCallback(false);
             $config->setEnableCoroutine(false);
             $array[$i] = new RenderWorker($config);

@@ -28,13 +28,13 @@ final class CommandTest extends TestCase
     public function testCommandSurvivesSerializationRoundTrip(): void
     {
         $command = new Command();
-        $command->setOp(Command::OP_WORKER_EXIT);
-        $command->setArg(['reason' => 'restart']);
+        $command->setOp(Command::OP_RENDER);
+        $command->setArg(['template' => 'welcome.php']);
 
         $copy = unserialize(serialize($command));
 
         self::assertInstanceOf(Command::class, $copy);
-        self::assertSame(Command::OP_WORKER_EXIT, $copy->getOp());
-        self::assertSame(['reason' => 'restart'], $copy->getArg());
+        self::assertSame(Command::OP_RENDER, $copy->getOp());
+        self::assertSame(['template' => 'welcome.php'], $copy->getArg());
     }
 }
