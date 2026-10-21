@@ -35,7 +35,7 @@ class Render
         }
     }
 
-    function render(string $template,?array $data = null,?array $options = null):?string
+    function render(string $template, array $data = [], array $options = []): ?string
     {
         /*
          * 随机找一个进程

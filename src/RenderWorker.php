@@ -39,7 +39,12 @@ class RenderWorker extends AbstractUnixProcess
                         try{
                             $reply = $render->render($data['template'],$data['data'],$data['options']);
                         }catch (\Throwable $throwable){
-                            $reply = $render->onException($throwable,$data);
+                            $reply = $render->onException(
+                                $throwable,
+                                $data['template'],
+                                $data['data'],
+                                $data['options']
+                            );
                         } finally {
                             $socket->sendAll(Protocol::pack(serialize($reply)));
                             $socket->close();

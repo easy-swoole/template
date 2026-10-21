@@ -35,7 +35,7 @@ class Blade implements RenderInterface
      * @param array|null $options
      * @return string|null
      */
-    public function render(string $template, ?array $data = [], ?array $options = []): ?string
+    public function render(string $template, array $data = [], array $options = []): ?string
     {
         $content = $this->engine->render($template, $data);
         return $content;
@@ -59,7 +59,12 @@ class Blade implements RenderInterface
      * @return string
      * @throws Throwable
      */
-    public function onException(\Throwable $throwable, $arg): string
+    public function onException(
+        \Throwable $throwable,
+        string $template,
+        array $data = [],
+        array $options = []
+    ): string
     {
         throw $throwable;
     }
