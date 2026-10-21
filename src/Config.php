@@ -8,18 +8,18 @@ use EasySwoole\Spl\SplBean;
 
 class Config extends SplBean
 {
-    protected $serverName = 'EasySwoole';
-    protected $render;
-    protected $tempDir;
-    protected $workerNum = 3;
-    protected $timeout = 3;
+    protected string $serverName = 'EasySwoole';
+    protected ?RenderInterface $render = null;
+    protected ?string $tempDir = null;
+    protected int $workerNum = 3;
+    protected int $timeout = 3;
     /** @var callable|null */
-    protected $onException;
+    protected mixed $onException = null;
 
     /**
      * @return mixed
      */
-    public function getRender():RenderInterface
+    public function getRender(): ?RenderInterface
     {
         return $this->render;
     }
@@ -35,7 +35,7 @@ class Config extends SplBean
     /**
      * @return mixed
      */
-    public function getTempDir()
+    public function getTempDir(): ?string
     {
         return $this->tempDir;
     }
@@ -43,7 +43,7 @@ class Config extends SplBean
     /**
      * @param mixed $tempDir
      */
-    public function setTempDir($tempDir): void
+    public function setTempDir(string $tempDir): void
     {
         $this->tempDir = $tempDir;
     }
@@ -83,7 +83,7 @@ class Config extends SplBean
     /**
      * @return mixed
      */
-    public function getSocketPrefix()
+    public function getSocketPrefix(): string
     {
         return md5(get_class($this->getRender()));
     }

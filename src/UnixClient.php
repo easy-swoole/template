@@ -8,8 +8,9 @@ use Swoole\Coroutine\Client;
 
 class UnixClient
 {
-    private $client = null;
-    function __construct(string $unixSock)
+    private Client $client;
+
+    public function __construct(string $unixSock)
     {
         $this->client = new Client(SWOOLE_UNIX_STREAM);
         $this->client->set(
@@ -23,14 +24,14 @@ class UnixClient
         );
         $this->client->connect($unixSock,0,3);
     }
-    function __destruct()
+    public function __destruct()
     {
         // TODO: Implement __destruct() method.
         if($this->client->isConnected()){
             $this->client->close();
         }
     }
-    function send(string $rawData)
+    public function send(string $rawData): int|false
     {
         if($this->client->isConnected()){
             return $this->client->send($rawData);
@@ -38,7 +39,7 @@ class UnixClient
             return false;
         }
     }
-    function recv(float $timeout = 0.1)
+    public function recv(float $timeout = 0.1): ?string
     {
         if($this->client->isConnected()){
             $ret = $this->client->recv($timeout);

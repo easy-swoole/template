@@ -10,15 +10,15 @@ use Swoole\Coroutine\Socket;
 
 class RenderWorker extends AbstractUnixProcess
 {
-    /** @var Config */
-    protected $renderConfig;
-    public function run($arg)
+    protected Config $renderConfig;
+
+    public function run($arg): void
     {
         $this->renderConfig = $arg['config'];
         parent::run($arg);
     }
 
-    function onAccept(Socket $socket)
+    public function onAccept(Socket $socket): void
     {
         /** @var RenderInterface $render */
         $render = $this->renderConfig->getRender();
@@ -73,7 +73,7 @@ class RenderWorker extends AbstractUnixProcess
         }
     }
 
-    protected function onException(\Throwable $throwable,...$arg)
+    protected function onException(\Throwable $throwable, ...$arg): void
     {
         $call = $this->renderConfig->getOnException();
         if(is_callable($call)){

@@ -11,10 +11,10 @@ class Render
 {
     use Singleton;
 
-    protected $config;
+    protected Config $config;
 
 
-    function __construct(?Config $config = null)
+    public function __construct(?Config $config = null)
     {
         if($config == null){
             $config = new Config();
@@ -27,7 +27,7 @@ class Render
         return $this->config;
     }
 
-    function attachServer(Server $server)
+    public function attachServer(Server $server): void
     {
         $list = $this->__generateWorkerProcess();
         foreach ($list as $p){
@@ -35,7 +35,7 @@ class Render
         }
     }
 
-    function render(string $template, array $data = [], array $options = []): ?string
+    public function render(string $template, array $data = [], array $options = []): ?string
     {
         /*
          * 随机找一个进程
@@ -61,7 +61,7 @@ class Render
         return null;
     }
 
-    function restartWorker()
+    public function restartWorker(): bool
     {
         $com = new Command();
         $com->setOp(Command::OP_WORKER_EXIT);
