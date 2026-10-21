@@ -86,14 +86,6 @@ class Config extends SplBean
     }
 
     /**
-     * @return mixed
-     */
-    public function getSocketPrefix(): string
-    {
-        return md5(get_class($this->getRender()));
-    }
-
-    /**
      * @return callable(\Throwable, mixed...): void|null
      */
     public function getOnException(): ?callable
@@ -128,7 +120,7 @@ class Config extends SplBean
     protected function initialize(): void
     {
         if(empty($this->tempDir)){
-            $this->tempDir = getcwd();
+            $this->tempDir = sys_get_temp_dir();
         }
     }
 

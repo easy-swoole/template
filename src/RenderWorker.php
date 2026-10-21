@@ -49,7 +49,6 @@ class RenderWorker extends AbstractUnixProcess
         $allLength = Protocol::packDataLength($header);
         $data = $socket->recvAll($allLength,1);
         if(strlen($data) == $allLength){
-            $reply = null;
             $command = unserialize($data);
             if($command instanceof Command){
                 switch ($command->getOp()){

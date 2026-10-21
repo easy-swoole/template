@@ -17,7 +17,8 @@ final class ConfigTest extends TestCase
         self::assertSame('EasySwoole', $config->getServerName());
         self::assertSame(3, $config->getWorkerNum());
         self::assertSame(3, $config->getTimeout());
-        self::assertSame(getcwd(), $config->getTempDir());
+        self::assertNotNull($config->getTempDir());
+        self::assertDirectoryExists($config->getTempDir());
         self::assertNull($config->getRender());
         self::assertNull($config->getOnException());
     }
@@ -56,7 +57,6 @@ final class ConfigTest extends TestCase
         self::assertSame(9, $config->getTimeout());
         self::assertSame('test-server', $config->getServerName());
         self::assertSame($callback, $config->getOnException());
-        self::assertSame(md5($renderer::class), $config->getSocketPrefix());
     }
 
     public function testWorkerNumberMustBeGreaterThanZero(): void

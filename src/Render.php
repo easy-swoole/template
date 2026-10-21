@@ -69,8 +69,9 @@ class Render
             'data'=>$data,
             'options'=>$options
         ]);
-        $client->send(Protocol::pack(serialize($com)));
-        $data = $client->recv($this->config->getTimeout());
+        $deadline = ClientDeadline::after($this->config->getTimeout());
+        $client->send(Protocol::pack(serialize($com)), $deadline);
+        $data = $client->recv($deadline);
         if($data){
             $data = Protocol::unpack($data);
             return unserialize($data);
