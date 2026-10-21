@@ -20,7 +20,7 @@ class Render
             $config = new Config();
         }
         $this->config = $config;
-        $this->processTable = new Table(128);
+        $this->processTable = new Table(256);
         $this->processTable->column('pid',Table::TYPE_INT,10);
         $this->processTable->create();
     }
@@ -57,7 +57,6 @@ class Render
         /*
          * 随机找一个进程
          */
-        mt_srand();
         $id = mt_rand(0,$this->getConfig()->getWorkerNum()-1);
         $server = $this->getConfig()->getServerName();
         $sockFile = $this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$id}.sock";

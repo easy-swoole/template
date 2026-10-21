@@ -82,6 +82,10 @@ class Config extends SplBean
      */
     public function setTimeout(int $timeout): void
     {
+        if ($timeout < 1) {
+            throw new \InvalidArgumentException('Timeout must be greater than zero.');
+        }
+
         $this->timeout = $timeout;
     }
 

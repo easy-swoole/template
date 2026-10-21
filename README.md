@@ -1,56 +1,41 @@
-# Template
+# EasySwoole Template
 
-## 实现原理
-注册N个自定义进程做渲染进程，进程内关闭协程环境，并监听UNIXSOCK，客户端调用携程的client客户端发送数据给进程渲染，进程再返回结果给客户端，用来解决PHP模板引擎协程安全问题。可以实现渲染接口，根据自己的喜好引入smarty或者是blade或者是其他引擎.
+将非协程安全的 PHP 模板引擎放入独立渲染进程中执行，并通过 Unix Socket 与业务协程通信。
 
-## 引入模板引擎类
+## 运行要求
 
-下面列举一些常用的模板引擎包方便引入使用:
+- PHP 8.1 或更高版本
+- Swoole 扩展
+- EasySwoole Component 2.x
 
-### [smarty/smarty](https://github.com/smarty-php/smarty)
+安装：
 
-Smarty是一个使用PHP写出来的模板引擎,是目前业界最著名的PHP模板引擎之一
+```bash
+composer require easyswoole/template
+```
 
-> composer require smarty/smarty=~3.1
+## 工作原理
 
+`Render` 会向 Swoole Server 注册指定数量的 `RenderWorker`。每个 worker 监听独立的 Unix Socket，并串行调用用户实现的 `RenderInterface`，避免同一个模板引擎实例被多个协程同时使用。业务协程通过客户端发送模板名称、数据和选项，worker 完成渲染后返回字符串或 `null`。
 
-### [league/plates](https://github.com/thephpleague/plates)
+该方式适用于 Smarty、Blade、Plates、Think Template 等不适合直接在协程间共享实例的模板引擎。模板引擎依赖需要由项目自行安装。
 
-使用原生PHP语法的非编译型模板引擎，更低的学习成本和更高的自由度
-
-> composer require league/plates=3.*
-
-### [duncan3dc/blade](https://github.com/duncan3dc/blade)
-
-Laravel框架使用的模板引擎
-
-> composer require duncan3dc/blade=^4.5
-
-### [topthink/think-template](https://github.com/top-think/think-template)
-
-ThinkPHP框架使用的模板引擎
-
-> composer require topthink/think-template
-
-
-## 渲染模板
-
-选择一个心仪的模板引擎，并实现RenderInterface接口，当进程收到一条渲染指令时，会调用该实现类的render方法进行渲染，渲染结束后调用afterRender方法，可在此处进行变量释放清理等操作，以Smarty引擎为例，创建一个渲染器， 并渲染的最小例子如下
-
-### 用Smarty作为渲染器
+## 实现渲染器
 
 ```php
 <?php
-use EasySwoole\Template\Render;
+
 use EasySwoole\Template\RenderInterface;
 
-require 'vendor/autoload.php';
-
-class MyRender implements RenderInterface{
-
+final class MyRenderer implements RenderInterface
+{
     public function render(string $template, array $data = [], array $options = []): ?string
     {
-        return "your template is {$template} and data is ".json_encode($data);
+        return sprintf(
+            'template=%s, data=%s',
+            $template,
+            json_encode($data, JSON_UNESCAPED_UNICODE)
+        );
     }
 
     public function onException(
@@ -62,25 +47,102 @@ class MyRender implements RenderInterface{
         error_log($throwable->getMessage());
     }
 }
-$render = new Render();
-$render->getConfig()->setRender(new MyRender());
-
-$http = new swoole_http_server("0.0.0.0", 9501);
-$http->on("request", function ($request, $response) use ($render) {
-    $ret = $render->render('index.html',['easyswoole'=>'hello']);
-    $response->end($ret);
-});
-
-$render->attachServer($http);
-
-$http->start();
 ```
 
-### 启动测试服务器
+`onException()` 运行在渲染 worker 中，用于记录或上报渲染异常。异常信息不会作为响应返回给客户端；发生异常时 worker 会关闭本次连接。
 
-代码包内置了一个小型的测试服务器，在tests目录下，支持smarty、plates、blade、think四种引擎的快速测试，使用下方代码启动，访问 http://127.0.0.1:9501 即可查看输出，对应的模板文件在test/TemplateViews目录下，可以修改这些模板来测试功能
+## 配置并挂载服务
+
+```php
+<?php
+
+use EasySwoole\Template\Exception\ClientException;
+use EasySwoole\Template\Exception\ClientTimeoutException;
+use EasySwoole\Template\Render;
+use Swoole\Http\Server;
+
+require 'vendor/autoload.php';
+
+$render = new Render();
+$config = $render->getConfig();
+$config->setRender(new MyRenderer());
+$config->setServerName('MyApplication');
+$config->setWorkerNum(3);
+$config->setTimeout(3);
+
+$server = new Server('0.0.0.0', 9501);
+$server->on('request', function ($request, $response) use ($render): void {
+    try {
+        $content = $render->render(
+            'index.html',
+            ['name' => 'EasySwoole'],
+            ['cache' => true]
+        );
+        $response->end($content ?? '');
+    } catch (ClientTimeoutException | ClientException $throwable) {
+        error_log($throwable->getMessage());
+        $response->status(503);
+        $response->end('Template service unavailable');
+    }
+});
+
+$render->attachServer($server);
+$server->start();
+```
+
+`Render` 不实现单例。实例的创建和共享方式由调用方决定。
+
+`attachServer()` 只能调用一次，并且必须事先配置 `RenderInterface`。重复挂载或未配置 renderer 时会抛出 `LogicException`。
+
+## 配置项
+
+| 配置 | 默认值 | 说明 |
+| --- | --- | --- |
+| `render` | `null` | `RenderInterface` 实现，挂载服务前必须配置 |
+| `serverName` | `EasySwoole` | 进程名和 Unix Socket 文件名前缀；多实例应使用不同名称 |
+| `tempDir` | `sys_get_temp_dir()` | Unix Socket 文件目录 |
+| `workerNum` | `3` | 渲染进程数量，必须大于 0 |
+| `timeout` | `3` | 单次客户端请求的总超时秒数，必须大于 0 |
+| `onException` | `null` | 渲染进程自身发生运行时异常时的回调 |
+
+进程级异常回调会收到原始异常和 EasySwoole Process 提供的全部上下文参数：
+
+```php
+$config->setOnException(
+    static function (\Throwable $throwable, ...$context): void {
+        error_log($throwable->getMessage());
+    }
+);
+```
+
+## Deadline 与客户端异常
+
+每次 `render()` 会创建一个共享 deadline，连接、发送和接收共同消耗 `timeout` 配置的时间预算。
+
+- deadline 耗尽时抛出 `ClientTimeoutException`。
+- 非超时的连接、发送或接收错误抛出 `ClientException`。
+- 两种异常都包含失败阶段和 Unix Socket 路径。
+- `ClientException` 还包含 Swoole 的 `errCode` 和 `errMsg`。
+
+失败阶段可能是 `connect`、`send` 或 `receive`。
+
+## 进程管理
+
+worker 启动后会以 PID 为 key 写入共享 `Swoole\Table`，退出时删除对应记录：
+
+```php
+$processTable = $render->getProcessTable();
+
+foreach ($processTable as $pid => $row) {
+    echo $row['pid'], PHP_EOL;
+}
+```
+
+组件不提供 worker 重启指令。进程停止、拉起和异常恢复应由 Swoole Server 或调用方的外部进程管理机制负责。
+
+## 测试
 
 ```bash
-cd tests
-php testServer.php -e 模板引擎名称
+composer install
+composer test
 ```

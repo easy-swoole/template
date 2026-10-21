@@ -51,6 +51,9 @@ class UnixClient
                     $this->throwIfTimedOut($deadline, 'send');
                     throw $this->createClientException('send');
                 }
+                if ($sent === 0) {
+                    throw $this->createClientException('send');
+                }
                 $sentLength += $sent;
             }
             return $sentLength;
@@ -67,6 +70,7 @@ class UnixClient
             $ret = $this->client->recv($timeout);
             if ($ret === false) {
                 $this->throwIfTimedOut($deadline, 'receive');
+                throw $this->createClientException('receive');
             }
             if ($ret !== false && $ret !== '') {
                 return $ret;

@@ -76,4 +76,23 @@ final class ConfigTest extends TestCase
 
         $config->setWorkerNum(-1);
     }
+
+    public function testTimeoutMustBeGreaterThanZero(): void
+    {
+        $config = new Config();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Timeout must be greater than zero.');
+
+        $config->setTimeout(0);
+    }
+
+    public function testNegativeTimeoutIsRejected(): void
+    {
+        $config = new Config();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $config->setTimeout(-1);
+    }
 }
