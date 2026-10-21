@@ -17,6 +17,9 @@ class Config extends SplBean
     /** @var callable(\Throwable, mixed...): void|null */
     protected mixed $onException = null;
 
+    /** @var callable(RenderWorker): void|null */
+    protected mixed $onWorkerStart = null;
+
     /**
      * @return mixed
      */
@@ -103,6 +106,22 @@ class Config extends SplBean
     public function setOnException(?callable $onException): void
     {
         $this->onException = $onException;
+    }
+
+    /**
+     * @return callable(RenderWorker): void|null
+     */
+    public function getOnWorkerStart(): ?callable
+    {
+        return $this->onWorkerStart;
+    }
+
+    /**
+     * @param callable(RenderWorker): void|null $onWorkerStart
+     */
+    public function setOnWorkerStart(?callable $onWorkerStart): void
+    {
+        $this->onWorkerStart = $onWorkerStart;
     }
 
     /**

@@ -22,6 +22,7 @@ class Render
         $this->config = $config;
         $this->processTable = new Table(256);
         $this->processTable->column('pid',Table::TYPE_INT,10);
+        $this->processTable->column('startUpTime',Table::TYPE_INT,10);
         $this->processTable->create();
     }
 
@@ -33,6 +34,19 @@ class Render
     public function getProcessTable(): Table
     {
         return $this->processTable;
+    }
+
+    /**
+     * @return array<int, array{pid: int, startUpTime: int}>
+     */
+    public function workerInfo(): array
+    {
+        $workers = [];
+        foreach ($this->processTable as $pid => $worker) {
+            $workers[(int)$pid] = $worker;
+        }
+
+        return $workers;
     }
 
     public function attachServer(Server $server): void

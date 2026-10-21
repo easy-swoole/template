@@ -21,6 +21,7 @@ final class ConfigTest extends TestCase
         self::assertDirectoryExists($config->getTempDir());
         self::assertNull($config->getRender());
         self::assertNull($config->getOnException());
+        self::assertNull($config->getOnWorkerStart());
     }
 
     public function testConfigurationCanBeChanged(): void
@@ -41,6 +42,8 @@ final class ConfigTest extends TestCase
         };
         $callback = static function (): void {
         };
+        $workerStartCallback = static function (): void {
+        };
         $config = new Config();
 
         $config->setRender($renderer);
@@ -49,6 +52,7 @@ final class ConfigTest extends TestCase
         $config->setTimeout(9);
         $config->setServerName('test-server');
         $config->setOnException($callback);
+        $config->setOnWorkerStart($workerStartCallback);
 
         self::assertSame($renderer, $config->getRender());
         self::assertSame('/tmp/template-tests', $config->getTempDir());
@@ -56,6 +60,7 @@ final class ConfigTest extends TestCase
         self::assertSame(9, $config->getTimeout());
         self::assertSame('test-server', $config->getServerName());
         self::assertSame($callback, $config->getOnException());
+        self::assertSame($workerStartCallback, $config->getOnWorkerStart());
     }
 
     public function testWorkerNumberMustBeGreaterThanZero(): void

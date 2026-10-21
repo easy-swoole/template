@@ -18,7 +18,14 @@ class RenderWorker extends AbstractUnixProcess
         $this->renderConfig = $arg['config'];
         $this->processTable = $arg['processTable'];
         $pid = $this->getPid();
-        $this->processTable->set($pid, ['pid' => $pid]);
+        $this->processTable->set($pid, [
+            'pid' => $pid,
+            'startUpTime' => time(),
+        ]);
+        $onWorkerStart = $this->renderConfig->getOnWorkerStart();
+        if ($onWorkerStart !== null) {
+            $onWorkerStart($this);
+        }
         parent::run($arg);
     }
 

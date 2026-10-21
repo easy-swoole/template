@@ -128,14 +128,24 @@ $config->setOnException(
 
 ## 进程管理
 
-worker 启动后会以 PID 为 key 写入共享 `Swoole\Table`，退出时删除对应记录：
+worker 启动后会以 PID 为 key 写入共享 `Swoole\Table`，记录 PID 和启动时间戳，退出时删除对应记录。可以通过 `workerInfo()` 获取全部 worker 信息：
 
 ```php
-$processTable = $render->getProcessTable();
-
-foreach ($processTable as $pid => $row) {
-    echo $row['pid'], PHP_EOL;
+foreach ($render->workerInfo() as $pid => $worker) {
+    echo $worker['pid'], ' ', $worker['startUpTime'], PHP_EOL;
 }
+```
+
+如需直接操作共享表，可使用 `$render->getProcessTable()`。
+
+可通过 `onWorkerStart` 在每个渲染 worker 进程启动后执行初始化逻辑。回调在进程表完成登记后触发，并接收当前 `RenderWorker`：
+
+```php
+$config->setOnWorkerStart(
+    static function (\EasySwoole\Template\RenderWorker $worker): void {
+        // 在当前 worker 进程中初始化所需资源
+    }
+);
 ```
 
 组件不提供 worker 重启指令。进程停止、拉起和异常恢复应由 Swoole Server 或调用方的外部进程管理机制负责。

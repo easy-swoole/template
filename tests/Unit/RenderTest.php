@@ -89,5 +89,21 @@ namespace EasySwoole\Template\TestCase\Unit {
                 self::assertSame($render->getProcessTable(), $worker->getArg()['processTable']);
             }
         }
+
+        public function testWorkerInfoReturnsProcessRowsKeyedByPid(): void
+        {
+            $render = new Render();
+            $render->getProcessTable()->set('1234', [
+                'pid' => 1234,
+                'startUpTime' => 1_729_440_000,
+            ]);
+
+            self::assertSame([
+                1234 => [
+                    'pid' => 1234,
+                    'startUpTime' => 1_729_440_000,
+                ],
+            ], $render->workerInfo());
+        }
     }
 }
