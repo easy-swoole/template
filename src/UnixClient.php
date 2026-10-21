@@ -4,6 +4,7 @@
 namespace EasySwoole\Template;
 
 
+use EasySwoole\Template\Exception\ClientException;
 use EasySwoole\Template\Exception\ClientTimeoutException;
 use Swoole\Coroutine\Client;
 
@@ -12,7 +13,7 @@ class UnixClient
     private Client $client;
     private string $unixSock;
 
-    public function __construct(string $unixSock)
+    public function __construct(string $unixSock, ClientDeadline $deadline)
     {
         $this->unixSock = $unixSock;
         $this->client = new Client(SWOOLE_UNIX_STREAM);
@@ -25,7 +26,11 @@ class UnixClient
                 'package_max_length'    => 1024*1024
             ]
         );
-        $this->client->connect($unixSock,0,3);
+        $timeout = $this->remainingTimeout($deadline, 'connect');
+        if (!$this->client->connect($unixSock, 0, $timeout)) {
+            $this->throwIfTimedOut($deadline, 'connect');
+            throw $this->createClientException('connect');
+        }
     }
     public function __destruct()
     {
@@ -34,7 +39,7 @@ class UnixClient
             $this->client->close();
         }
     }
-    public function send(string $rawData, ClientDeadline $deadline): int|false
+    public function send(string $rawData, ClientDeadline $deadline): int
     {
         if($this->client->isConnected()){
             $sentLength = 0;
@@ -44,14 +49,14 @@ class UnixClient
                 $sent = $this->client->send(substr($rawData, $sentLength), $timeout);
                 if ($sent === false) {
                     $this->throwIfTimedOut($deadline, 'send');
-                    return false;
+                    throw $this->createClientException('send');
                 }
                 $sentLength += $sent;
             }
             return $sentLength;
         }else{
             $this->remainingTimeout($deadline, 'send');
-            return false;
+            throw $this->createClientException('send');
         }
     }
 
@@ -88,5 +93,15 @@ class UnixClient
         if ($this->client->errCode === SOCKET_ETIMEDOUT || $deadline->isExpired()) {
             throw new ClientTimeoutException($deadline->getTimeout(), $this->unixSock, $operation);
         }
+    }
+
+    private function createClientException(string $operation): ClientException
+    {
+        return new ClientException(
+            $operation,
+            $this->unixSock,
+            $this->client->errCode,
+            $this->client->errMsg
+        );
     }
 }

@@ -52,8 +52,7 @@ namespace EasySwoole\Template\TestCase\Unit {
                     string $template,
                     array $data = [],
                     array $options = []
-                ): string {
-                    return $throwable->getMessage();
+                ): void {
                 }
             });
             $render = new class($config) extends Render {

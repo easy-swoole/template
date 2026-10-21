@@ -13,5 +13,5 @@ interface RenderInterface
         string $template,
         array $data = [],
         array $options = []
-    ): string;
+    ): void;
 }

@@ -18,23 +18,8 @@ class RenderWorker extends AbstractUnixProcess
         $this->renderConfig = $arg['config'];
         $this->processTable = $arg['processTable'];
         $pid = $this->getPid();
-        if ($pid === null) {
-            throw new \RuntimeException('Unable to register render worker without a process PID.');
-        }
-        $this->writeProcessPid($pid);
+        $this->processTable->set($pid, ['pid' => $pid]);
         parent::run($arg);
-    }
-
-    protected function writeProcessPid(int $pid): void
-    {
-        if (!$this->processTable->set((string)$pid, ['pid' => (string)$pid])) {
-            throw new \RuntimeException("Unable to register render worker PID {$pid}.");
-        }
-    }
-
-    protected function removeProcessPid(int $pid): void
-    {
-        $this->processTable->del((string)$pid);
     }
 
     public function onAccept(Socket $socket): void
@@ -56,15 +41,15 @@ class RenderWorker extends AbstractUnixProcess
                         $data = $command->getArg();
                         try{
                             $reply = $render->render($data['template'],$data['data'],$data['options']);
+                            $socket->sendAll(Protocol::pack(serialize($reply)));
                         }catch (\Throwable $throwable){
-                            $reply = $render->onException(
+                            $render->onException(
                                 $throwable,
                                 $data['template'],
                                 $data['data'],
                                 $data['options']
                             );
                         } finally {
-                            $socket->sendAll(Protocol::pack(serialize($reply)));
                             $socket->close();
                         }
                         break;
@@ -94,9 +79,7 @@ class RenderWorker extends AbstractUnixProcess
     protected function onShutDown(): void
     {
         $pid = $this->getPid();
-        if (isset($this->processTable) && $pid !== null) {
-            $this->removeProcessPid($pid);
-        }
+        $this->processTable->del((string)$pid);
 
         parent::onShutDown();
     }

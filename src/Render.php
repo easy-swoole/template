@@ -21,7 +21,7 @@ class Render
         }
         $this->config = $config;
         $this->processTable = new Table(128);
-        $this->processTable->column('pid',Table::TYPE_STRING,10);
+        $this->processTable->column('pid',Table::TYPE_INT,10);
         $this->processTable->create();
     }
 
@@ -61,7 +61,6 @@ class Render
         $id = mt_rand(0,$this->getConfig()->getWorkerNum()-1);
         $server = $this->getConfig()->getServerName();
         $sockFile = $this->getConfig()->getTempDir()."/{$server}.Render.Worker.{$id}.sock";
-        $client = new UnixClient($sockFile);
         $com = new Command();
         $com->setOp(Command::OP_RENDER);
         $com->setArg([
@@ -69,8 +68,10 @@ class Render
             'data'=>$data,
             'options'=>$options
         ]);
+        $packet = Protocol::pack(serialize($com));
         $deadline = ClientDeadline::after($this->config->getTimeout());
-        $client->send(Protocol::pack(serialize($com)), $deadline);
+        $client = new UnixClient($sockFile, $deadline);
+        $client->send($packet, $deadline);
         $data = $client->recv($deadline);
         if($data){
             $data = Protocol::unpack($data);

@@ -36,8 +36,7 @@ final class ConfigTest extends TestCase
                 string $template,
                 array $data = [],
                 array $options = []
-            ): string {
-                return $throwable->getMessage();
+            ): void {
             }
         };
         $callback = static function (): void {

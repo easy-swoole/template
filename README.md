@@ -58,8 +58,8 @@ class MyRender implements RenderInterface{
         string $template,
         array $data = [],
         array $options = []
-    ): string {
-        return $throwable->getTraceAsString();
+    ): void {
+        error_log($throwable->getMessage());
     }
 }
 $render = new Render();
